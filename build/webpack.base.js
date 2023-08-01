@@ -3,12 +3,14 @@ const path = require('path')
 const { VueLoaderPlugin } = require('vue-loader')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const isDev = process.env.NODE_ENV === 'development' // 是否是开发模式
 
 module.exports = {
     entry: path.join(__dirname, '../src/index.ts'), // 入口文件
     // 打包文件出口
     output: {
-        filename: 'static/js/[name].js', // 每个输出js的名称
+        filename: 'static/js/[name].[chunkhash:8].js', // // 加上[chunkhash:8]
         path: path.join(__dirname, '../dist'), // 打包结果输出路径
         clean: true, // webpack4需要配置clean-webpack-plugin来删除dist文件,webpack5内置了
         publicPath: '/' // 打包后文件的公共前缀路径
@@ -16,12 +18,14 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.vue$/, // 匹配.vue文件
-                use: 'vue-loader', // 用vue-loader去解析vue文件
+                include: [path.resolve(__dirname, '../src')], //只对项目src文件的vue进行loader解析
+                test: /\.vue$/,
+                use: ['thread-loader', 'vue-loader']
             },
             {
-                test: /\.ts$/,
-                use: 'babel-loader'
+                include: [path.resolve(__dirname, '../src')], //只对项目src文件的ts进行loader解析
+                test: /\.ts/,
+                use: ['thread-loader', 'babel-loader']
             },
             // {
             //     test: /\.ts$/,
@@ -53,9 +57,21 @@ module.exports = {
             //     }
             // },
             {
-                test: /\.(css|less)$/, //匹配 css和less 文件
+                test: /.css$/, //匹配所有的 css 文件
+                include: [path.resolve(__dirname, '../src')],
                 use: [
-                    'style-loader',
+                    // 开发环境使用style-looader,打包模式抽离css
+                    isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
+                    'css-loader',
+                    'postcss-loader'
+                ]
+            },
+            {
+                test: /.less$/, //匹配所有的 less 文件
+                include: [path.resolve(__dirname, '../src')],
+                use: [
+                    // 开发环境使用style-looader,打包模式抽离css
+                    isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
                     'css-loader',
                     'postcss-loader',
                     'less-loader'
@@ -70,7 +86,7 @@ module.exports = {
                     }
                 },
                 generator: {
-                    filename: 'static/images/[name][ext]', // 文件输出目录和命名
+                    filename:'static/images/[name].[contenthash:8][ext]' // 加上[contenthash:8]
                 },
             },
             {
@@ -82,7 +98,7 @@ module.exports = {
                     }
                 },
                 generator: {
-                    filename: 'static/fonts/[name][ext]', // 文件输出目录和命名
+                    filename:'static/fonts/[name].[contenthash:8][ext]', // 加上[contenthash:8]
                 },
             },
             {
@@ -94,7 +110,7 @@ module.exports = {
                     }
                 },
                 generator: {
-                    filename: 'static/media/[name][ext]', // 文件输出目录和命名
+                    filename:'static/media/[name].[contenthash:8][ext]', // 加上[contenthash:8]
                 },
             },
         ]
@@ -113,6 +129,14 @@ module.exports = {
     ],
     resolve: {
         extensions: ['.vue', '.ts', '.js', '.json'],
-    }
+        alias: {
+            '@': path.join(__dirname, '../src')
+        },
+        // 如果用的是pnpm 就暂时不要配置这个，会有幽灵依赖的问题，访问不到很多模块。
+        modules: [path.resolve(__dirname, '../node_modules')], // 查找第三方模块只在本项目的node_modules中查找
+    },
+    cache: {
+        type: 'filesystem', // 使用文件缓存
+    },
 }
 

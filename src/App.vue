@@ -8,8 +8,8 @@
 </template>
 
 <script setup lang="ts">
-  import smallImg from './assets/imgs/4kb.png'
-  import bigImg from './assets/imgs/1mb.png'
+  import smallImg from '@/assets/imgs/4kb.png'
+  import bigImg from '@/assets/imgs/1mb.png'
   import './app.css'
   import './app.less'
 </script>
